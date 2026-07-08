@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Forge // Gotham System</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body onload="initSystem()">
+    <canvas id="3d-canvas" class="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none"></canvas>
+
+    <!-- SLICK NAVBAR -->
+    <nav class="max-w-6xl mx-auto mt-6 bg-[#050505]/80 backdrop-blur-md border border-white/5 rounded-full px-6 py-3 flex items-center justify-between sticky top-4 z-50 shadow-lg">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="toggleMobileMenu()">
+            <img src="./Images/Bat_logo.png" id="bat-logo-svg" class="w-8 h-8 bat-logo-glow object-contain transition-transform duration-500" alt="Logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2VmNDQ0NCI+PHBhdGggZD0iTTEyIDJDNy41IDIgNCA1IDQgOWMwIDEuNS41IDMgMS41IDQuNWw2LjUgODuNSAyLjUtOC41QzE5LjUgMTIgMjAgMTAuNSAyMCA5YzAtNCAzLjUtNyA4LTd6Ii8+PC9zdmc+'">
+            <span class="cyber-font text-xs font-bold text-white tracking-widest hidden md:block">ProgressCave</span>
+        </div>
+        
+        <div class="hidden md:flex items-center space-x-2">
+            <button id="nav-dashboard" onclick="switchView('dashboard')" class="nav-btn active-nav">Cave</button>
+            <button id="nav-progress" onclick="switchView('progress')" class="nav-btn text-zinc-500">Progress</button>
+            <button id="nav-focus" onclick="switchView('focus')" class="nav-btn text-zinc-500">Active Focus</button>
+            <button id="nav-neural" onclick="switchView('neural')" class="nav-btn text-zinc-500">Neural Sync</button>
+        </div>
+        
+        <div class="flex items-center space-x-3 bg-black/60 px-4 py-1.5 rounded-full border border-white/5">
+            <svg onclick="openShop()" class="w-5 h-5 text-yellow-500 hover:text-yellow-400 cursor-pointer transition-all hover:scale-110 star-glow" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <div class="w-px h-4 bg-white/20"></div>
+            <span class="text-[10px] text-zinc-500 uppercase tracking-wider">BP:</span>
+            <span id="bp-display" class="cyber-font text-sm font-bold text-red-500">0</span>
+        </div>
+    </nav>
+
+    <!-- MOBILE SIDEBAR -->
+    <div id="mobile-sidebar" class="fixed inset-y-0 left-0 z-[100] w-64 bg-[#050505]/95 backdrop-blur-xl border-r border-red-900/30 transform -translate-x-full transition-transform duration-300 md:hidden flex flex-col p-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+        <div class="flex items-center justify-between border-b border-red-900/30 pb-4 mb-6">
+            <span class="cyber-font text-sm font-bold text-white tracking-widest">GOTHAM OS</span>
+            <button onclick="toggleMobileMenu()" class="text-zinc-500 hover:text-red-500 transition-colors text-lg">✕</button>
+        </div>
+        <div class="flex flex-col space-y-4">
+            <button onclick="switchView('dashboard'); toggleMobileMenu()" class="nav-btn text-left text-zinc-400 hover:text-red-500 hover:bg-red-900/20 active-nav-mobile border border-transparent">Cave</button>
+            <button onclick="switchView('progress'); toggleMobileMenu()" class="nav-btn text-left text-zinc-400 hover:text-red-500 hover:bg-red-900/20 border border-transparent">Progress</button>
+            <button onclick="switchView('focus'); toggleMobileMenu()" class="nav-btn text-left text-zinc-400 hover:text-red-500 hover:bg-red-900/20 border border-transparent">Active Focus</button>
+            <button onclick="switchView('neural'); toggleMobileMenu()" class="nav-btn text-left text-zinc-400 hover:text-red-500 hover:bg-red-900/20 border border-transparent">Neural Sync</button>
+        </div>
+    </div>
+    <div id="mobile-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] hidden md:hidden" onclick="toggleMobileMenu()"></div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboard-view" class="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10 mt-4">
+        <section class="lg:col-span-3 space-y-6">
+            <div class="bat-panel rounded-2xl p-6 flex flex-col items-center justify-center relative h-64">
+                <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none z-0">
+                    <div id="avatar-neural-bg-container" class="absolute inset-0 flex items-center justify-center transition-all duration-1000 opacity-40">
+                        <div class="animate-rotate-slow w-[200%] h-[200%] flex items-center justify-center">
+                            <svg viewBox="0 0 200 200" class="w-full h-full text-red-600">
+                                <g stroke="currentColor" stroke-width="1.5" class="opacity-60"><line x1="100" y1="100" x2="100" y2="0" /><line x1="100" y1="100" x2="100" y2="200" /><line x1="100" y1="100" x2="0" y2="100" /><line x1="100" y1="100" x2="200" y2="100" /><line x1="100" y1="100" x2="30" y2="30" /><line x1="100" y1="100" x2="170" y2="170" /><line x1="100" y1="100" x2="30" y2="170" /><line x1="100" y1="100" x2="170" y2="30" /></g>
+                                <circle cx="100" cy="100" r="45" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" />
+                                <circle cx="100" cy="100" r="70" fill="none" stroke="currentColor" stroke-width="0.5" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <div onmouseenter="changeComicSpeech()" ontouchstart="handleTouchSpeech(this, event)" class="relative group cursor-pointer w-28 h-28 rounded-full border-[3px] border-black flex items-center justify-center bg-black shadow-[0_0_30px_rgba(239,68,68,0.4)] transition-all hover:border-red-600 z-10">
+                    <div class="w-full h-full rounded-full overflow-hidden avatar-breathe bg-zinc-900">
+                        <img id="main-avatar-img" src="./Images/Batman.jpeg" class="bat-avatar-img" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2VmNDQ0NCI+PHBhdGggZD0iTTEyIDJDNy41IDIgNCA1IDQgOWMwIDEuNS41IDMgMS41IDQuNWw2LjUgODuNSAyLjUtOC41QzE5LjUgMTIgMjAgMTAuNSAyMCA5YzAtNCAzLjUtNyA4LTd6Ii8+PC9zdmc+'">
+                    </div>
+                    <!-- Dedicated Edit Button -->
+                    <div onclick="openEquipment()" class="absolute -bottom-1 -right-1 bg-red-600 text-black p-2 rounded-full shadow-[0_0_15px_#ef4444] z-30 hover:bg-white transition-colors">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </div>
+                    <div id="dynamic-speech-bubble" class="comic-speech">System Ready.</div>
+                </div>
+                <h4 class="cyber-font text-[9px] text-red-500 tracking-[0.2em] uppercase mt-6 z-10 font-bold bg-black/60 px-3 py-1 rounded border border-red-900/50">Improvement Time</h4>
+            </div>
+            <div class="bat-panel rounded-2xl p-5 border-t-2 border-red-500/50">
+                <h3 class="cyber-font font-bold text-xs text-red-400 mb-3 tracking-widest">DEPLOY MATRIX</h3>
+                <input type="text" id="new-sector-name" placeholder="Name new sector..." class="w-full bg-black/80 border border-white/10 rounded-lg p-2.5 text-xs mb-3 text-white focus:outline-none focus:border-red-500 transition-colors">
+                
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="text-[9px] text-zinc-500 uppercase">Difficulty:</span>
+                    <div id="star-rating" class="flex cursor-pointer text-zinc-700 text-sm">
+                        <span onclick="setNewDifficulty(1)" class="text-yellow-500">★</span>
+                        <span onclick="setNewDifficulty(2)">★</span>
+                        <span onclick="setNewDifficulty(3)">★</span>
+                        <span onclick="setNewDifficulty(4)">★</span>
+                    </div>
+                </div>
+
+                <button onclick="createNewSector()" class="w-full bg-red-600 hover:bg-red-500 text-black cyber-font font-bold text-[11px] py-2.5 rounded-lg transition-colors uppercase tracking-widest">Launch Matrix</button>
+            </div>
+        </section>
+        <section class="lg:col-span-9">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="sectors-grid-container"></div>
+        </section>
+    </div>
+
+    <!-- PROGRESS VIEW -->
+    <div id="progress-view" class="hidden-view max-w-6xl mx-auto p-6 relative z-10 mt-4">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bat-panel rounded-2xl p-6 h-80 flex flex-col items-center justify-center relative overflow-hidden border border-red-900/30">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
+                        <svg class="w-[150%] h-[150%] animate-rotate-slow" viewBox="0 0 200 200">
+                            <circle cx="100" cy="100" r="70" fill="none" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="2 6"/>
+                            <circle cx="100" cy="100" r="90" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="20 10"/>
+                        </svg>
+                        <svg class="absolute w-[120%] h-[120%] animate-rotate-rev" viewBox="0 0 200 200">
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="#3b82f6" stroke-width="0.5" stroke-dasharray="4 12"/>
+                        </svg>
+                    </div>
+                    <div class="relative z-10 w-40 h-40">
+                        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_15px_rgba(239,68,68,0.6)]">
+                            <path d="M50 10 L45 25 L30 25 L40 40 L25 55 L35 70 L20 85 L50 95 L80 85 L65 70 L75 55 L60 40 L70 25 L55 25 Z" fill="none" stroke="#ef4444" stroke-width="2" stroke-linejoin="round"/>
+                            <path d="M45 45 L50 60 L55 45 Z" fill="#ef4444" />
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="2 4" />
+                        </svg>
+                    </div>
+                    <div class="absolute bottom-4 left-0 w-full text-center z-10 bg-black/60 py-2 backdrop-blur-sm border-t border-red-900/50">
+                        <span class="cyber-font text-[10px] text-zinc-400 uppercase tracking-[0.2em] block mb-1">Focus </span>
+                        <span id="hud-focus-hours" class="cyber-font text-lg text-white">0.0 HRS</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 bat-panel rounded-2xl p-6 flex flex-col items-center justify-center border border-white/5">
+                <h3 class="cyber-font text-xs text-white uppercase tracking-widest mb-6 border-b border-red-900/50 pb-2 w-full text-center">Completion Telemetry</h3>
+                <div class="flex flex-col items-center gap-8 w-full">
+                    <div class="relative flex items-center justify-center">
+                        <svg class="w-24 h-24 transform -rotate-90">
+                            <circle cx="48" cy="48" r="40" stroke="#1f2937" stroke-width="6" fill="none" />
+                            <circle id="hud-circ-day" cx="48" cy="48" r="40" stroke="#ef4444" stroke-width="6" fill="none" stroke-dasharray="251" stroke-dashoffset="251" stroke-linecap="round" class="hud-circle shadow-[0_0_10px_#ef4444]" />
+                        </svg>
+                        <div class="absolute flex flex-col items-center text-center">
+                            <span id="hud-txt-day" class="cyber-font text-xl font-bold text-white">0%</span>
+                            <span class="text-[8px] text-zinc-400 uppercase tracking-wider">Today</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-6">
+                        <div class="relative flex items-center justify-center">
+                            <svg class="w-16 h-16 transform -rotate-90">
+                                <circle cx="32" cy="32" r="26" stroke="#1f2937" stroke-width="4" fill="none" />
+                                <circle id="hud-circ-week" cx="32" cy="32" r="26" stroke="#3b82f6" stroke-width="4" fill="none" stroke-dasharray="163" stroke-dashoffset="163" stroke-linecap="round" class="hud-circle" />
+                            </svg>
+                            <div class="absolute flex flex-col items-center">
+                                <span id="hud-txt-week" class="cyber-font text-sm font-bold text-white">0%</span>
+                                <span class="text-[7px] text-zinc-500 uppercase tracking-wider">Week</span>
+                            </div>
+                        </div>
+                        <div class="relative flex items-center justify-center">
+                            <svg class="w-16 h-16 transform -rotate-90">
+                                <circle cx="32" cy="32" r="26" stroke="#1f2937" stroke-width="4" fill="none" />
+                                <circle id="hud-circ-month" cx="32" cy="32" r="26" stroke="#eab308" stroke-width="4" fill="none" stroke-dasharray="163" stroke-dashoffset="163" stroke-linecap="round" class="hud-circle" />
+                            </svg>
+                            <div class="absolute flex flex-col items-center">
+                                <span id="hud-txt-month" class="cyber-font text-sm font-bold text-white">0%</span>
+                                <span class="text-[7px] text-zinc-500 uppercase tracking-wider">Month</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bat-panel rounded-2xl p-6 border border-white/5">
+                    <h3 class="cyber-font text-xs text-white uppercase tracking-widest mb-4 flex justify-between">
+                        <span>Activity Matrix</span>
+                        <span class="text-red-500 text-[10px]">30 DAYS</span>
+                    </h3>
+                    <div class="grid grid-cols-7 gap-2" id="hud-calendar-grid"></div>
+                </div>
+                <div class="bat-panel rounded-2xl p-5 border border-white/5 h-[165px] overflow-y-auto">
+                    <h3 class="cyber-font text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Sector Analytics (Today)</h3>
+                    <div id="hud-sector-breakdown" class="space-y-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOCUS VIEW (UPDATED WITH LOG & CORRUPTION) -->
+    <div id="focus-view" class="hidden-view max-w-4xl mx-auto p-6 relative z-10 mt-10">
+        <div id="system-failure-overlay" class="fixed inset-0 bg-red-900/10 pointer-events-none z-[100] opacity-0 transition-opacity duration-300"></div>
+        
+        <div class="bat-panel rounded-3xl p-10 border border-white/5 shadow-2xl flex flex-col items-center relative overflow-hidden">
+            <div id="focus-glow" class="absolute inset-0 bg-red-900/5 transition-colors duration-1000"></div>
+            <h2 class="cyber-font text-xl text-zinc-400 tracking-[0.3em] uppercase mb-10 relative z-10">Active Focus Mode</h2>
+            
+            <div class="relative w-32 h-32 mb-6 z-10 flex items-center justify-center">
+                <img id="bat-sprite" src="https://i.pinimg.com/originals/b4/d9/f6/b4d9f60790d57d658d80c89967e0c2fc.gif" class="w-full h-full object-contain" style="image-rendering: pixelated;" onerror="this.style.display='none'">
+            </div>
+            
+            <div class="relative z-10 mb-4 flex items-center justify-center" onclick="editTimer()">
+                <input type="number" id="timer-input-m" value="25" min="1" max="120" class="cyber-font text-7xl font-black time-edit-input hidden">
+                <span id="timer-display" class="cyber-font text-7xl font-black text-white tracking-widest cursor-pointer hover:text-red-400 transition-colors">25:00</span>
+            </div>
+            
+            <p id="focus-status" class="text-xs text-zinc-500 uppercase tracking-widest mb-8 z-10">System Ready. Click time to edit.</p>
+            
+            <div class="grid grid-cols-3 gap-2 w-full max-w-sm relative z-10 mb-8">
+                <button id="btn-start" onclick="toggleTimer()" class="col-span-2 bg-red-600 hover:bg-red-500 text-black cyber-font font-bold py-3 rounded-lg text-[10px] transition-all uppercase tracking-widest">Engage</button>
+                <button id="btn-distract" onclick="logDistraction()" class="hidden col-span-1 bg-red-600 hover:bg-red-500 text-black cyber-font font-bold py-3 rounded-lg text-[10px] transition-all uppercase tracking-widest">Log</button>
+                <button onclick="resetTimer()" class="col-span-1 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white cyber-font py-3 rounded-lg text-[10px] transition-all uppercase tracking-widest">Reset</button>
+            </div>
+
+            <!-- Session History Log -->
+            <div class="w-full max-w-sm z-10 border-t border-white/10 pt-6 mt-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="cyber-font text-[10px] text-zinc-500 uppercase tracking-widest">Mission History</h3>
+                    <button onclick="clearFocusHistory()" class="text-[9px] text-red-500 hover:text-white uppercase tracking-widest underline transition-colors">Reset History</button>
+                </div>
+                <ul id="focus-history-list" class="space-y-2 text-[11px] text-zinc-400 max-h-40 overflow-y-auto pr-2">
+                    <!-- JavaScript Injects List Items Here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEURAL SYNC -->
+    <div id="neural-view" class="hidden-view max-w-6xl mx-auto p-0 relative z-10 h-[80vh]">
+        <div class="absolute inset-0 bg-[#020202] rounded-3xl overflow-hidden border border-red-900/30 shadow-[0_0_50px_rgba(239,68,68,0.05)]">
+            <canvas id="neural-biology-canvas" class="w-full h-full"></canvas>
+        </div>
+        <div class="absolute top-6 left-1/2 transform -translate-x-1/2 w-full max-w-2xl px-4 pointer-events-none">
+            <div class="bg-black/80 backdrop-blur-md border border-white/10 rounded-2xl p-6 shadow-[0_10px_40px_rgba(0,0,0,0.8)] pointer-events-auto">
+                <h2 class="cyber-font text-xl font-bold text-white tracking-wider flex items-center justify-center gap-3 mb-6">NEURAL CORE NETWORK <span class="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_8px_#ef4444] animate-pulse"></span></h2>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-zinc-900/50 p-4 rounded-xl border border-white/5 text-center">
+                        <span class="text-[9px] text-zinc-500 uppercase tracking-widest block mb-1">Total Synapses</span>
+                        <div class="flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <span id="synapse-count" class="cyber-font text-lg text-white">0 Nodes</span>
+                        </div>
+                    </div>
+                    <div class="bg-zinc-900/50 p-4 rounded-xl border border-white/5 text-center">
+                        <span class="text-[9px] text-zinc-500 uppercase tracking-widest block mb-1">Growth Scale Factor</span>
+                        <span id="scale-factor" class="cyber-font text-lg text-white">1.00x Growth</span>
+                    </div>
+                </div>
+                <div class="w-full">
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="cyber-font text-2xl font-bold text-red-500" id="hud-level">LVL 1</span>
+                        <span class="text-[10px] text-zinc-400 cyber-font tracking-wider" id="hud-exp-text">0 / 100 EXP</span>
+                    </div>
+                    <div class="w-full h-3 bg-black rounded-full overflow-hidden border border-white/10">
+                        <div id="exp-bar-fill" class="h-full bg-red-600 exp-bar-fill shadow-[0_0_10px_#ef4444]" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <div id="shop-modal" class="fixed inset-0 modal-overlay hidden flex items-center justify-center p-6">
+        <div class="bat-panel rounded-2xl w-full max-w-4xl max-h-[80vh] overflow-y-auto border border-yellow-500/30 p-8 relative">
+            <button onclick="closeShop()" class="absolute top-6 right-6 text-zinc-500 hover:text-red-500 transition-colors">✕</button>
+            <div class="text-center mb-8">
+                <h2 class="cyber-font text-2xl font-bold text-yellow-500 tracking-[0.2em] uppercase">Wayne Tech Vault</h2>
+                <div class="mt-4 inline-block bg-black/60 px-4 py-2 rounded-lg border border-white/5"><span class="text-xs text-zinc-500 uppercase mr-2">Available Balance:</span><span id="shop-bp-display" class="cyber-font font-bold text-yellow-500 text-lg">0 BP</span></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="shop-items-container"></div>
+        </div>
+    </div>
+
+    <div id="equipment-modal" class="fixed inset-0 modal-overlay hidden flex items-center justify-center p-6">
+        <div class="bat-panel rounded-2xl w-full max-w-2xl border border-red-500/30 p-8 relative">
+            <button onclick="closeEquipment()" class="absolute top-6 right-6 text-zinc-500 hover:text-red-500 transition-colors">✕</button>
+            <div class="text-center mb-8"><h2 class="cyber-font text-2xl font-bold text-white tracking-[0.2em] uppercase">Equip Suit</h2></div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6" id="equipment-container"></div>
+        </div>
+    </div>
+<script src="script.js"></script>
+</body>
+</html>
